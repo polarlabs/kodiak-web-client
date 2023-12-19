@@ -1,0 +1,100 @@
+#
+# Build and test
+#
+on:
+  workflow_call:
+    inputs:
+      DEPS_CACHE_KEY:
+        description: "Cache key for the dependencies."
+        type: string
+        required: true
+      PROFILE:
+        description: "Profile used to build."
+        default: "dev"
+        required: false
+        type: string
+      ARTIFACT_NAME:
+        description: "..."
+        required: true
+        type: string
+      ASSET_FILE:
+        description: "..."
+        default: "dist.tar.gz"
+        required: false
+        type: string
+
+env:
+  TRUNK_OUT_FOLDER: "dist"
+  TRUNK_VERSION: "0.17.5"
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+#permissions:
+#  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cargo-build:
+    uses: polarlabs/factory/.github/workflows/cargo-build-cache.yml@v/4.0.0
+    with:
+      DEPS_CACHE_KEY: ${{ inputs.DEPS_CACHE_KEY }}
+      PROFILE: ${{ inputs.PROFILE }}
+
+  cargo-test:
+    uses: polarlabs/factory/.github/workflows/cargo-test.yml@v/4.0.0
+    needs: [ cargo-build ]
+    with:
+      DEPS_CACHE_KEY: ${{ inputs.DEPS_CACHE_KEY }}
+      BUILD_CACHE_KEY: ${{ needs.cargo-build.outputs.CACHE_KEY }}
+      PROFILE: ${{ inputs.PROFILE }}
+
+  trunk-build:
+    runs-on: ubuntu-latest
+    needs: [ cargo-build, cargo-test ]
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/
+          key: ${{ inputs.DEPS_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            target/
+          key: ${{ needs.cargo-build.outputs.CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Install rust target wasm
+        run: |
+          rustup target add wasm32-unknown-unknown
+
+      - name: Install trunk
+        run: |
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+
+      - name: Build with trunk
+        run: |
+          ./trunk build
+
+      - name: Pack ${{ inputs.ARTIFACT_NAME }}
+        run: |
+          tar -czf ${{ inputs.ASSET_FILE }} ${{ env.TRUNK_OUT_FOLDER }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.ARTIFACT_NAME }}
+          path: |
+            ${{ inputs.ASSET_FILE }}
+          if-no-files-found: error
