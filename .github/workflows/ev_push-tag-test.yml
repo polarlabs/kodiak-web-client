@@ -1,8 +1,8 @@
-name: create-test-tag
+name: push-tag-test
 run-name: "${{ github.workflow }}: ${{ github.ref_name }} / ${{ github.run_number }}.${{ github.run_attempt }}"
 
 on:
-  create:
+  push:
     tags:
       - 'test/*'
 
