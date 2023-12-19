@@ -1,0 +1,28 @@
+name: schedule-daily
+run-name: "${{ github.workflow }}: ${{ github.ref_name }} / ${{ github.run_number }}.${{ github.run_attempt }}"
+
+on:
+  schedule:
+    - cron:  '4 6 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cargo-fetch:
+    uses: polarlabs/factory/.github/workflows/cargo-dep-cache.yml@v/4.0.0
+
+  wf_full:
+    uses: polarlabs/kodiak-web-client/.github/workflows/wf_full.yml@dev
+    needs: [ cargo-fetch ]
+    strategy:
+      matrix:
+        profiles: [ dev ]
+      fail-fast: false
+    with:
+      ARTIFACT_NAME: "dist.tar.gz"
+      DEPS_CACHE_KEY: ${{ needs.cargo-fetch.outputs.CACHE_KEY }}
+      RELEASE_TAG: "${{ github.ref_name }}/latest"
+      PROFILE: ${{ matrix.profiles }}
+    secrets: inherit
