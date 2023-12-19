@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Kodiak</title>
+    <link data-trunk rel="rust" />
+
+    <link data-trunk rel="sass" href="assets/sass/index.scss" />
+
+    <!-- Copy Favicon package to dist maintaining directory structure. -->
+    <link data-trunk rel="copy-dir" href="assets/favicon" data-target-path="assets/favicon" />
+
+    <!-- Copy Favicon to dist. -->
+    <link data-trunk rel="copy-file" href="assets/favicon/favicon.ico" />
+
+    <!-- Copy fonts to dist maintaining directory structure. -->
+    <link data-trunk rel="copy-dir" href="assets/font" data-target-path="assets/font" />
+
+    <!-- Copy Logo to dist maintaining directory structure. -->
+    <link data-trunk rel="copy-dir" href="assets/logo" data-target-path="assets/logo" />
+
+    <!-- Resources provided by Favicon package -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+    <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+    <link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#333333" />
+    <link rel="shortcut icon" href="/assets/favicon/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Kodiak" />
+    <meta name="application-name" content="Kodiak" />
+    <meta name="msapplication-TileColor" content="#333333" />
+    <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml?" />
+    <meta name="theme-color" content="#333333" />
+  </head>
+  <body>
+    <!-- Inline footer in index.html. -->
+    <link data-trunk rel="inline" type="html" href="assets/footer/footer.html" />
+  </body>
+</html>

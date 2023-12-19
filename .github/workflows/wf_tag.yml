@@ -1,0 +1,18 @@
+#
+# Tag ref as build
+#
+on:
+  workflow_call:
+
+# Restrict permissions of GITHUB_TOKEN
+# Access to scopes not specified is set to "none"
+#permissions:
+#  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  tag-ref-as-build:
+    uses: polarlabs/factory/.github/workflows/tag-ref-as-build.yml@v/4.0.0
