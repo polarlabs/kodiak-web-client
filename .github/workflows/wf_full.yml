@@ -58,9 +58,52 @@ jobs:
       BUILD_CACHE_KEY: ${{ needs.cargo-build.outputs.CACHE_KEY }}
       PROFILE: ${{ inputs.PROFILE }}
 
-  trunk-build:
+  trunk-build-1:
     runs-on: ubuntu-latest
     needs: [ cargo-build, cargo-test ]
+
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.cargo/
+          key: ${{ inputs.DEPS_CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            target/
+          key: ${{ needs.cargo-build.outputs.CACHE_KEY }}
+          fail-on-cache-miss: true
+
+      - name: Install rust target wasm
+        run: |
+          rustup target add wasm32-unknown-unknown
+
+      - name: Install trunk
+        run: |
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+
+      - name: Build with trunk
+        run: |
+          ./trunk build
+
+  tag-ref-as-build:
+    uses: polarlabs/factory/.github/workflows/tag-ref-as-build.yml@v/4.0.0
+    needs: [ trunk-build-1 ]
+
+  trunk-build-2:
+    runs-on: ubuntu-latest
+    needs: [ trunk-build-1, tag-ref-as-build ]
+
+    env:
+      BUILD_NUMBER: ${{ needs.tag-ref-as-build.outputs.BUILD_NUMBER }}
 
     steps:
       - name: Checkout git repo
@@ -106,6 +149,22 @@ jobs:
             ${{ inputs.ASSET_FILE }}
           if-no-files-found: error
 
+  create-release:
+    uses: polarlabs/factory/.github/workflows/create-release.yml@v/4.0.0
+    needs: [ tag-ref-as-build, trunk-build-2 ]
+    with:
+      ARTIFACT_NAME: ${{ inputs.ARTIFACT_NAME }}
+      ASSET_FILE: ${{ inputs.ASSET_FILE }}
+      COMMIT: ${{ github.sha }}
+      TAG: ${{ inputs.RELEASE_TAG }}
+      TITLE: "Draft, intended for CI / CD only. Build: ${{ needs.tag-ref-as-build.outputs.BUILD_NUMBER }}. Tag: ${{ needs.tag-ref-as-build.outputs.BUILD_TAG }}."
+    secrets: inherit
+
+  dispatch-repo:
+    runs-on: ubuntu-latest
+    needs: [ create-release ]
+
+    steps:
       - name: Dispatch repo
         run: |
           curl ${{ env.CURL_OPTIONS }} \
@@ -119,17 +178,3 @@ jobs:
                                             "repository": "${{ env.REPO }}", 
                                             "ref_name": "${{ github.ref_name }}",
                                             "artifact_name": "${{ inputs.ARTIFACT_NAME }}" }}'
-
-  tag-ref-as-build:
-    uses: polarlabs/factory/.github/workflows/tag-ref-as-build.yml@v/4.0.0
-
-  create-release:
-    uses: polarlabs/factory/.github/workflows/create-release.yml@v/4.0.0
-    needs: [ trunk-build, tag-ref-as-build ]
-    with:
-      ARTIFACT_NAME: ${{ inputs.ARTIFACT_NAME }}
-      ASSET_FILE: ${{ inputs.ASSET_FILE }}
-      COMMIT: ${{ github.sha }}
-      TAG: ${{ inputs.RELEASE_TAG }}
-      TITLE: "Draft, intended for CI / CD only. Build: ${{ needs.tag-ref-as-build.outputs.BUILD_NUMBER }}. Tag: ${{ needs.tag-ref-as-build.outputs.BUILD_TAG }}."
-    secrets: inherit
