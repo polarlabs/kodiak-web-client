@@ -26,7 +26,7 @@ defaults:
 
 jobs:
   cargo-fetch:
-    uses: polarlabs/factory/.github/workflows/cargo-dep-cache.yml@feat/cargo-dep-cache
+    uses: polarlabs/factory/.github/workflows/cargo-dep-cache.yml@v/4.0.0
 
   wf_full:
     uses: polarlabs/kodiak-web-client/.github/workflows/wf_full.yml@dev
